@@ -60,6 +60,7 @@ namespace ReceivableMng
             }
 
             views[0].Visible = true;
+            menu_labels[0].BackColor = Color.FromArgb(37, 99, 235);
         }
     }
 }

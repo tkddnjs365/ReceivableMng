@@ -6,7 +6,13 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>receivables_bill.ico</ApplicationIcon>
+    <AssemblyName>미수금관리</AssemblyName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="receivables_bill.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Supabase" Version="8.2.0" />
