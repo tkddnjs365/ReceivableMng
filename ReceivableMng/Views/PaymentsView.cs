@@ -53,19 +53,65 @@ namespace ReceivableMng.Views
             grid.AllowUserToDeleteRows = false;
             grid.RowHeadersVisible = false;
             grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            grid.SelectionMode = DataGridViewSelectionMode.CellSelect;
 
-            grid.Columns.Add("Client", "업체");
-            grid.Columns.Add("Date", "일자");
-            grid.Columns.Add("Memo", "내용");
-            grid.Columns.Add("Total", "총 금액");
-            grid.Columns.Add("Paid", "입금액");
-            grid.Columns.Add("Remain", "남은 금액");
-            grid.Columns.Add("Progress", "진행률");
+            grid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Client",
+                HeaderText = "업체",
+                ReadOnly = true
+            });
+
+            grid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Date",
+                HeaderText = "일자",
+                Width = 60,
+                ReadOnly = true
+            });
+
+            grid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Memo",
+                HeaderText = "내용",
+                ReadOnly = true
+            });
+            grid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Total",
+                HeaderText = "총 금액",
+                ReadOnly = true
+            });
+            grid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Paid",
+                HeaderText = "입금액",
+                ReadOnly = true
+            });
+            grid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Remain",
+                HeaderText = "남은 금액",
+                ReadOnly = true
+            });
+            grid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Progress",
+                HeaderText = "진행률",
+                ReadOnly = true
+            });
             grid.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "Input",
-                HeaderText = "입금 입력"
+                HeaderText = "입금 입력",
+                Width = 150,
+
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.LightGoldenrodYellow,
+                    Format = "N0",
+                    Alignment = DataGridViewContentAlignment.MiddleRight
+                }
             });
             grid.Columns.Add(new DataGridViewButtonColumn
             {
@@ -77,7 +123,24 @@ namespace ReceivableMng.Views
                 Name = "Complete",
                 HeaderText = ""
             });
+
             grid.CellContentClick += Grid_CellContentClick;
+
+
+            // 입금 입력 컬럼을 한 번 클릭하면 바로 편집 모드로 진입
+            grid.CellClick += (s, e) =>
+            {
+                // 헤더 클릭은 제외
+                if (e.RowIndex < 0 || e.ColumnIndex < 0)
+                    return;
+
+                // 입금 입력 컬럼인지 확인
+                if (grid.Columns[e.ColumnIndex].Name == "Input")
+                {
+                    // 셀 편집 시작
+                    grid.BeginEdit(true);
+                }
+            };
         }
 
         /// <summary>
