@@ -1,9 +1,11 @@
 # 미수금 관리
 
-## supabase-config.json 파일 설정 필요
-{
-  "Url": "supabase URL",
-  "Key": ""
-}
+- C#(.Net 10)
+- Sqlite
 
-## 초기 DB설정은 supabase-schema.sql 참고
+## Database 기본 저장 경로
+ > C:\DataBase\receivableMng.db
+
+## Database 경로 변경
+ > Data/AppConfig.cs 에서 변경 가능
+ > app-config 에서 변경 가능
