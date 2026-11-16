@@ -1,31 +1,27 @@
 ﻿using ReceivableMng.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace ReceivableMng.Data
 {
     /// <summary>
     /// 화면(View)들이 사용하는 데이터 창구.
-    /// supabase-config.json 이 있으면 Supabase(클라우드)를, 없으면 로컬 data.json 파일을 사용합니다.
-    /// 화면 코드 입장에서는 어느 쪽이든 DataStore.XxxAsync() 만 호출하면 됩니다.
+    /// 로컬 SQLite 파일(receivable.db)에 데이터를 저장합니다.
+    /// 화면 코드 입장에서는 DataStore.XxxAsync() 만 호출하면 됩니다.
     /// </summary>
     public static class DataStore
     {
+        /// <summary>메모리에 올려 둔 업체 목록. 화면들은 DB 대신 이 목록을 읽어서 보여준다.</summary>
         public static List<Client> Clients { get; private set; } = new();
+
+        /// <summary>메모리에 올려 둔 업무 목록.</summary>
         public static List<Job> Jobs { get; private set; } = new();
+
+        /// <summary>메모리에 올려 둔 입금 목록.</summary>
         public static List<Payment> Payments { get; private set; } = new();
 
         /// <summary>데이터가 바뀔 때마다 발생하는 이벤트. 각 화면이 구독해서 자동 새로고침합니다.</summary>
         public static event Action Changed; // 매개변수 없는 이벤트. 데이터 변경을 "알림"만 해줌
 
-        /// <summary>true면 Supabase 클라우드 모드, false면 로컬 JSON 파일 모드.</summary>
-        public static bool IsCloudMode { get; private set; }
-
-        // 실제 저장소 구현체(로컬 or 클라우드)를 들고 있는 필드. 인터페이스 타입이라 둘 다 담을 수 있음
+        // 실제 저장소 구현체(SQLite)를 들고 있는 필드
         private static IStorageProvider _provider;
 
         /// <summary>앱 시작 시 한 번 호출 (동기 래퍼).</summary>
@@ -33,47 +29,32 @@ namespace ReceivableMng.Data
         // GetAwaiter().GetResult()는 await과 비슷하게 결과가 끝날 때까지 블로킹(대기)함
         public static void Load() => LoadAsync().GetAwaiter().GetResult();
 
+        /// <summary>SQLite 저장소를 준비(DB 파일/테이블 생성)하고 데이터를 처음으로 읽어온다.</summary>
         public static async Task LoadAsync()
         {
-            // 설정 파일(supabase-config.json)을 읽어서 클라우드 접속 정보가 있는지 확인
-            var config = SupabaseConfig.LoadFromFile();
-            bool cloudConfigured = config != null
-                && !string.IsNullOrWhiteSpace(config.Url)
-                && !string.IsNullOrWhiteSpace(config.Key);
-
-            if (cloudConfigured)
+            try
             {
-                try
-                {
-                    // Supabase 접속 정보가 있으면 클라우드 저장소로 연결 시도
-                    var cloudProvider = new SupabaseStorageProvider(config.Url, config.Key);
-                    await cloudProvider.InitializeAsync();
-                    _provider = cloudProvider;
-                    IsCloudMode = true;
-                }
-                catch (Exception ex)
-                {
-                    // 접속 실패 시 프로그램을 멈추지 않고, 로컬 모드로 넘어가기 위해 경고만 띄움
-                    MessageBox.Show(
-                        $"Supabase 연결에 실패했습니다. 로컬 저장 모드로 전환합니다.\n\n{ex.Message}",
-                        "Supabase 연결 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
+                var provider = new SqliteStorageProvider();
+                await provider.InitializeAsync(); // DB 파일이 없으면 만들고, 테이블도 준비
+                _provider = provider;
+            }
+            catch (Exception ex)
+            {
+                // 저장소 없이는 프로그램을 쓸 수 없으므로, 안내 후 종료
+                MessageBox.Show(
+                    $"데이터베이스(SQLite)를 여는 데 실패했습니다.\n\n{ex.Message}",
+                    "DB 오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(1);
             }
 
-            // 클라우드 설정이 없거나, 위에서 연결에 실패했다면 로컬 파일 저장소를 사용
-            if (_provider == null)
-            {
-                var localProvider = new LocalJsonStorageProvider();
-                await localProvider.InitializeAsync();
-                _provider = localProvider;
-                IsCloudMode = false;
-            }
-
-            // 저장소가 결정됐으니 실제 데이터를 한 번 읽어옴
+            // 저장소가 준비됐으니 실제 데이터를 한 번 읽어옴
             await RefreshAllAsync();
         }
 
-        // 저장소(_provider)로부터 최신 데이터를 다시 받아와 목록을 갱신하는 내부 전용 메서드
+        /// <summary>
+        /// 저장소(_provider)로부터 최신 데이터를 다시 받아와 목록을 갱신하는 내부 전용 메서드.
+        /// 갱신이 끝나면 Changed 이벤트로 화면들에게 알려 준다.
+        /// </summary>
         private static async Task RefreshAllAsync()
         {
             Clients = await _provider.GetClientsAsync();
@@ -82,8 +63,10 @@ namespace ReceivableMng.Data
             Changed?.Invoke(); // 구독 중인 화면들에게 "데이터 바뀌었다"고 알림 (null이면 호출 안 함)
         }
 
-        // 저장소에 변경 작업(추가/수정/삭제)을 요청하고, 성공하면 목록을 새로고침하는 공통 처리 메서드
-        // Func<Task>: "실행하면 Task를 반환하는 메서드"를 매개변수로 받는다는 뜻
+        /// <summary>
+        /// 저장소에 변경 작업(추가/수정/삭제)을 요청하고, 성공하면 목록을 새로고침하는 공통 처리 메서드.
+        /// </summary>
+        /// <param name="action">실행할 작업. Func&lt;Task&gt; 는 "실행하면 Task를 반환하는 메서드"를 매개변수로 받는다는 뜻</param>
         private static async Task RunAsync(Func<Task> action)
         {
             try

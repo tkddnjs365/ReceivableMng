@@ -7,8 +7,8 @@ namespace ReceivableMng.Data
 {
     /// <summary>
     /// 데이터 저장 방식을 추상화하는 인터페이스.
-    /// 로컬 JSON 파일(LocalJsonStorageProvider)과 Supabase 클라우드(SupabaseStorageProvider)가
-    /// 둘 다 이 인터페이스를 구현하고, DataStore는 어느 쪽인지 신경 쓰지 않고 이 인터페이스만 봅니다.
+    /// 현재는 SqliteStorageProvider(로컬 SQLite 파일)가 이 인터페이스를 구현하고,
+    /// DataStore는 이 인터페이스만 바라봅니다.
     /// </summary>
     public interface IStorageProvider
     {

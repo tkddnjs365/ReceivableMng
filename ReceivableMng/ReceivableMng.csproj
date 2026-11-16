@@ -6,16 +6,16 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ApplicationIcon>receivables_bill.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\receivables_bill.ico</ApplicationIcon>
     <AssemblyName>미수금관리</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="receivables_bill.ico" />
+    <Content Include="Resources\receivables_bill.ico" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Supabase" Version="8.2.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0" />
     <PackageReference Include="WinForms.DataVisualization" Version="1.10.2" />
   </ItemGroup>
 
